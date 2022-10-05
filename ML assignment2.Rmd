@@ -1,0 +1,108 @@
+---
+title: "ML assignment2"
+author: "Varshini"
+date: "2022-10-04"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(class)
+library(dplyr)
+library(caret)
+library(tinytex)
+UB_1 <- read.csv("~/Downloads/UniversalBank (1).csv")
+
+#removing the unwanted Columns
+UB_1$ID<-NULL
+UB_1$ZIP.Code<-NULL
+View(UB_1)
+
+#transformin into factor variable
+UB_1$Personal.Loan=as.factor(UB_1$Personal.Loan)
+
+#Checking for null variables,if any available and converting Education to character
+head(is.na(UB_1))
+UB_1$Education=as.character(UB_1$Education)
+
+#Create dummy  variables
+Education1 <- ifelse(UB_1$Education==1 ,1,0)
+Education2 <- ifelse(UB_1$Education==2 ,1,0)
+Education3 <- ifelse(UB_1$Education==3 ,1,0)
+
+dataset<-data.frame(Age=UB_1$Age,Experience=UB_1$Experience,Income=UB_1$Income,Family=UB_1$Family,CCAvg=UB_1$CCAvg, Education1=Education1,Education2=Education2,Education3=Education3,Personal.Loan=UB_1$Personal.Loan,Mortgage=UB_1$Mortgage,Securities.Account=UB_1$Securities.Account,CD.Account=UB_1$CD.Account,Online=UB_1$Online,CreditCard=UB_1$CreditCard)
+
+
+
+#Testdata defined
+testset1<-data.frame(Age=40,Experience=10,Income=84,Family=2,CCAvg=2,Education_1=0,Education_2=1,Education_3=0,Mortgage=0,Securities.Account=0,CD.Account=0,Online=1,CreditCard=1)
+
+#Data splitted in the ratio of 60:40
+set.seed(250)
+dummy<- createDataPartition(dataset$Personal.Loan,p=.6,list=FALSE,times=1)
+trainset1 <- dataset[dummy, ]
+validset1<- dataset[-dummy, ]
+
+#Normalization
+NormalMod=preProcess(testset1[,-(6:9)],method=c("center","scale"))
+trainNorm1 =predict(NormalMod,trainset1)
+validNorm1 =predict(NormalMod,validset1)
+testNorm1 =predict(NormalMod,testset1)
+
+View(trainNorm1)
+
+#running knn 
+predicttrain1<-trainNorm1[,-9]
+trainsamp<-trainNorm1[,9]
+predictval<-validNorm1[,-9]
+valsamp<-validNorm1[,9]
+
+predict<-knn(predicttrain1, testNorm1, cl=trainsamp,k=1)
+predict
+
+#Since determined when the k value=0, the customer denies the loan offered by the bank.
+
+
+
+#Finding the best value of k
+
+set.seed(350)
+gr1<-expand.grid(k=seq(1:30))                  
+mod1<-train(Personal.Loan~.,data=trainNorm1,method="knn",tuneGrid=gr1)  
+
+mod1
+
+value_k<-mod1$bestTune[[1]]
+
+
+
+#confusion matrix
+
+predicted<-predict(mod1,validNorm1[-9])
+confusionMatrix(predicted,valsamp)
+
+#data is split in the ratio of 50:30:20 
+
+ set.seed(346) 
+ 
+lab1<-createDataPartition(dataset$Personal.Loan,p=0.5,list=FALSE)
+lab2<-createDataPartition(dataset$Personal.Loan,p=0.3,list=FALSE)
+lab3<-createDataPartition(dataset$Personal.Loan,p=0.2,list=FALSE)
+
+train2<-dataset[lab1,]
+valid2<-dataset[lab2,]
+test2<-dataset[lab3,]
+ 
+ 
+#normalizing new dataset
+
+norm1<-preProcess(trainset1[,-(6:9)],method=c("center","scale"))
+
+normtrain1 <- predict(norm1,trainset1)
+
+normvalid1<-predict(norm1,validset1)
+
+normtest1<-predict(norm1,testset1)
+```
+
