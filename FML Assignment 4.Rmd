@@ -1,0 +1,99 @@
+---
+title: "FML assignment 4"
+author: "Varshini"
+date: "2022-11-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+```{r}
+Pharmaceuticals <- read.csv("~/Downloads/Pharmaceuticals.csv")
+
+library(ggplot2)
+library(factoextra)
+library(flexclust)
+library(cluster)
+library(tidyverse)
+summary(Pharmaceuticals)
+#Task 1
+#Use only the numerical variables (1 to 9) to cluster the 21 firms. Justify the
+#various choices made in conducting the cluster analysis, such as weights for 
+#different variables, the specific clustering algorithm(s) used, the number of
+#clusters formed, and so on. 
+P <- na.omit(Pharmaceuticals)
+P
+row.names(P) <- P[,1]
+Pharma1 <-  P[,3:11]
+head(Pharma1)
+Pharma2 <- scale(Pharma1)
+head(Pharma2)
+fviz_nbclust(Pharma2, kmeans, method = "wss") +labs(subtitle = "Elbow Method")
+fviz_nbclust(Pharma2, kmeans, method = "silhouette") + labs(subtitle = "Silhouette Method")
+fviz_nbclust(Pharma2, kmeans, method = "gap_stat") + labs(subtitle = "Gap Stat Method")
+```
+```{r}
+set.seed(64060)                           
+k5 <- kmeans(Pharma2, centers = 5, nstart = 25)
+k5 $centers
+fviz_cluster(k5, data = Pharma2)
+k5
+Dist <- dist(Pharma2, method = "euclidian")
+fviz_dist(Dist)
+Fitting <- kmeans(Pharma2,5)
+aggregate(Pharma2,by = list(Fitting$cluster), FUN = mean)
+Pharma3 <- data.frame(Pharma2,Fitting$cluster)
+Pharma3
+library(cluster)
+clusplot(Pharma2,Fitting$cluster, color = TRUE, shade = TRUE, 
+         labels = 2,
+         lines = 0)
+```
+```{r}
+#Task 2
+#Interpret the clusters with respect to the numerical variables used in forming 
+#the clusters. 
+aggregate(Pharma2, by = list(Fitting$cluster), FUN = mean)
+Pharmacy <- data.frame(Pharma2,k5$cluster)
+Pharmacy
+#CLuster 1:- JNJ, MRK, GSK, PFE
+#Cluster 1: Highest Market_Cap and lowest Beta/PE Ratio
+#Cluster 2:- AHM, WPI, AVE
+#Cluster 2: Highest Revenue Growth and lowest PE/Asset Turnover Ratio
+#Cluster 3:- CHTT, IVX, MRX, ELN
+#Cluster 3: Highest Beta/leverage/Asset Turnover Ratio and lowest 
+#Net_Profit_Margin, PE ratio and Marke#Cluster
+#Cluster 4:- AGN, BAY, PHA
+#Cluster 4: Highest PE ratio and lowest Asset_Turnover
+#Cluster 5:- ABT, WYE, AZN, SGP, BMY, NVS, LLY
+#Cluster 5: Highest Net_Proft_Margin and lowest Leverage
+```
+
+```{r}
+#Task3
+#Is there a pattern in the clusters with respect to the numerical variables (10 to 12)? #(those not used in forming the clusters) 
+PH <- Pharmaceuticals[12:14] %>% mutate(Clusters=k5$cluster)
+ggplot(PH, mapping = aes(factor(Clusters), fill =Median_Recommendation))+geom_bar(position='dodge')+labs(x ='Clusters')
+ggplot(PH, mapping = aes(factor(Clusters),fill = Location))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+ggplot(PH, mapping = aes(factor(Clusters),fill = Exchange))+geom_bar(position = 'dodge')+labs(x ='Clusters')
+#From the above graphs,we can say that there is a slight pattern in the clusters.
+# he companies are evenly dispersed throughout AMEX, NASDAQ, and NYSE but the #cluster 1 has different Hold and Moderate Buy medians, differing counts from the US and Germany.
+#Equal Hold and Moderate Buy medians are found in Cluster 2, which is solely listed #on the NYSE and is evenly split between the US and Canada.
+#The Cluster 3 has equal Moderate Buy and Sell medians,different count from 
+#countries France, Ireland and US and are listed in NYSE.
+#The Cluster 4 has different Hold, Moderate buy, Moderate Sell and Strong buy 
+#medians with the hold having the highest median. They're from countries US, UK 
+#and Switzerland and they are listed in NYSE.
+# The Cluster 5 has the same hold and mdoerate buy medians, is distributed in 
+#countries UK and US and is also listed in NYSE.
+```
+
+```{r}
+#TASK 4
+#Provide an appropriate name for each cluster using any or all of the variables
+#in the dataset. 
+#Cluster 1 :- Buy Cluster
+#Cluster 2 :- Confused Cluster
+#Cluster 3 :- Average Buy Cluster
+#Cluster 4 :- Hold Cluster
+#Cluster 5 :- High Hold Cluster
+```
