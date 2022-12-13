@@ -1,0 +1,93 @@
+---
+title: "Machine learning Project"
+author: "Varshini"
+date: "2022-12-08"
+output: pdf_document
+---
+
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(factoextra)
+library(ISLR)
+library(gridExtra)
+library(cluster)
+library(dplyr)
+library(caret)
+library(dbscan)
+library(factoextra)
+```
+
+```{r}
+
+Fuel_Dataset <- read.csv("~/Downloads/fuel.csv")
+
+summary(Fuel_Dataset)
+```
+
+```{r}
+
+#choosing the numerical variables and removing the Null Values from the dataset.
+data1<-Fuel_Dataset[,c(11,15,16,20)]
+
+#Checking NA
+colMeans(is.na(data1))
+
+#Imputting NA
+data1$fuel_cost_per_mmbtu [is.na(data1$fuel_cost_per_mmbtu )]<-
+  median(data1$fuel_cost_per_mmbtu , na.rm = T)
+```
+```{r}
+
+set.seed(1234)
+data1_partition <- createDataPartition(data1$fuel_cost_per_mmbtu ,p=.015, list = FALSE)
+Train <- data1[data1_partition,]
+Exc_Data <- data1[-data1_partition,]
+
+data2_partition <- createDataPartition(Exc_Data$fuel_cost_per_mmbtu,p=0.005,list=F)
+Test <- Exc_Data[data2_partition,]
+Exc.Data.1 <- Exc_Data[-data2_partition,]
+```
+
+```{r}
+
+#Data Normalization
+norm_data <- preProcess(Train[,-1], 
+                        method=c("range"))
+train_norm <-predict(norm_data,Train)
+test_norm <-predict(norm_data,Test)
+```
+```{r}
+fviz_nbclust(train_norm[,-1],kmeans,method="silhouette")
+
+```
+```{r}
+
+fviz_nbclust(train_norm[,-1],kmeans,method="wss")
+
+```
+```{r}
+
+# Using several values of K, computing K-means clustering for various centers, 
+#and comparing the results
+
+kmeans.df <- kmeans(train_norm[,-1], centers = 2, nstart = 25)
+cluster <- kmeans.df$cluster
+
+kmeans.df.1 <- cbind(Train,cluster)
+
+plot.cluster <- fviz_cluster(kmeans.df,kmeans.df.1[,-1])
+plot.cluster
+
+```
+```{r}
+
+kmeans.df.1%>%group_by(cluster)%>%
+  summarize(median_units=median(fuel_received_units),
+            median_cost=median(fuel_cost_per_mmbtu),
+            median_mmbtu=median(fuel_mmbtu_per_unit))
+
+kmeans.df.1 %>% select(fuel_group_code,cluster)%>%
+  group_by(cluster,fuel_group_code) %>% count()
+```
